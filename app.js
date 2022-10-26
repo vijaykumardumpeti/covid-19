@@ -1,5 +1,6 @@
 let express = require("express");
 let app = express();
+module.exports = app;
 
 app.use(express.json());
 
@@ -49,25 +50,29 @@ app.get("/states/", async (request, response) => {
 });
 
 //2) get state:Id
-app.get("/states/:stateId/", (request, response) => {
-  let { stateId } = request.params;
-  let getStateQuery = `
-  SELECT 
-  * 
-  FROM 
-  state
-  WHERE 
-  state_id = ${stateId};
-  `;
-  let dbObject = db.get(getStateQuery);
+app.get("/states/:stateId/", async (request, response) => {
+  try {
+    let { stateId } = request.params;
+    let getStateQuery = `
+    SELECT 
+    * 
+    FROM 
+    state
+    WHERE 
+    state_id = ${stateId};`;
+    let dbObject = await db.get(getStateQuery);
 
-  let { state_id, state_name, population } = dbObject;
-  let s = {
-    stateId: state_id,
-    stateName: state_name,
-    population: population,
-  };
-  response.send(s);
+    let { state_id, state_name, population } = dbObject;
+    let s = {
+      stateId: state_id,
+      stateName: state_name,
+      population: population,
+    };
+    response.send(s);
+    console.log(dbObject);
+  } catch (e) {
+    console.log(`DB Error: ${e.message}`);
+  }
 });
 
 //3) post
@@ -92,3 +97,124 @@ app.post("/districts/", async (request, response) => {
     console.log(`DB Error: ${e.message}`);
   }
 });
+
+//4) GET
+
+app.get("/districts/:districtId/", async (request, response) => {
+  try {
+    let { districtId } = request.params;
+    let getDistrictQuery = `
+  SELECT 
+  * 
+  FROM 
+  district
+  WHERE 
+  district_id = ${districtId};`;
+    let dbObject = await db.get(getDistrictQuery);
+    let {
+      district_id,
+      district_name,
+      state_id,
+      cases,
+      cured,
+      active,
+      deaths,
+    } = dbObject;
+    let s = {
+      districtId: district_id,
+      districtName: district_name,
+      stateId: state_id,
+      cases: cases,
+      cured: cured,
+      active: active,
+      deaths: deaths,
+    };
+    response.send(s);
+  } catch (e) {
+    console.log(`DB Error: ${e.message}`);
+  }
+});
+
+//5) DELETE
+
+app.delete("/districts/:districtId/", async (request, response) => {
+  let { districtId } = request.params;
+  let deleteDistrictsQuery = `
+DELETE 
+FROM 
+district
+WHERE 
+district_id = ${districtId};`;
+  await db.run(deleteDistrictsQuery);
+  response.send("District Removed");
+});
+
+//6) PUT
+
+app.put("/districts/:districtId/", async (request, response) => {
+  let { districtId } = request.params;
+  let { districtName, stateId, cases, cured, active, deaths } = request.body;
+  let updateDistrictQuery = `
+    UPDATE 
+    district
+    SET 
+        district_name = '${districtName}',
+        state_id = '${stateId}',
+        cases = '${cases}',
+        cured = '${cured}',
+        active = '${active}',
+        deaths = '${deaths}' `;
+
+  await db.run(updateDistrictQuery);
+  response.send("District Details Updated");
+});
+
+//7) GET
+
+app.get("/states/:stateId/stats/", async (request, response) => {
+  try {
+    let { stateId } = request.params;
+    let getStatisticsQuery = `
+    SELECT 
+    * 
+    FROM 
+    district
+    WHERE 
+    state_id = ${stateId};
+  `;
+    let dbObject = await db.get(getStatisticsQuery);
+
+    let { cases, cured, active, deaths } = dbObject;
+    let s = {
+      totalCases: cases,
+      totalCured: cured,
+      totalActive: active,
+      totalDeaths: deaths,
+    };
+    response.send(s);
+  } catch (e) {
+    console.log(`DB Error: ${e.message}`);
+  }
+});
+
+//8) GET
+
+app.get("/districts/:districtId/details/", async (request, response) => {
+  let { districtId } = request.params;
+  let getStateNameQuery = `
+    SELECT 
+    state_name 
+    FROM 
+    state INNER JOIN district
+    ON state.state_id = district.state_id
+    WHERE 
+    district_id = ${districtId};
+  `;
+  let dbObject = await db.get(getStateNameQuery);
+  let { state_name } = dbObject;
+  let s = {
+    stateName: state_name,
+  };
+  response.send(s);
+});
+
