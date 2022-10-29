@@ -35,7 +35,7 @@ app.get("/states/", async (request, response) => {
     state
     `;
   let dbObject = await db.all(getStatesQuery);
-
+  console.log(dbObject);
   let myArray = [];
   for (let object of dbObject) {
     let s = {
@@ -176,20 +176,23 @@ app.get("/states/:stateId/stats/", async (request, response) => {
     let { stateId } = request.params;
     let getStatisticsQuery = `
     SELECT 
-    * 
+        SUM(cases),
+        SUM(cured),
+        SUM(active),
+        SUM(deaths) 
     FROM 
-    district
+        district
     WHERE 
-    state_id = ${stateId};
+        state_id = ${stateId};
   `;
     let dbObject = await db.get(getStatisticsQuery);
-
+    //console.log(dbObject);
     let { cases, cured, active, deaths } = dbObject;
     let s = {
-      totalCases: cases,
-      totalCured: cured,
-      totalActive: active,
-      totalDeaths: deaths,
+      totalCases: dbObject["SUM(cases)"],
+      totalCured: dbObject["SUM(cured)"],
+      totalActive: dbObject["SUM(active)"],
+      totalDeaths: dbObject["SUM(deaths)"],
     };
     response.send(s);
   } catch (e) {
@@ -217,4 +220,3 @@ app.get("/districts/:districtId/details/", async (request, response) => {
   };
   response.send(s);
 });
-
