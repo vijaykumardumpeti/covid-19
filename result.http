@@ -13,7 +13,6 @@ Content-Type: application/json
     "active": 315,
     "deaths": 8
 }
-
 ###
 GET http://localhost:3000/districts/322/
 
